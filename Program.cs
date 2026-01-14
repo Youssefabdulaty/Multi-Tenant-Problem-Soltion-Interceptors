@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MinimalAPI.Data;
 using MinimalAPI.Data.Repositories;
 using MinimalAPI.Entities;
+using MinimalAPI.Interceptors;
 using MinimalAPI.Interfaces;
 
 namespace MinimalAPI
@@ -17,8 +18,17 @@ namespace MinimalAPI
 
             builder.Services.AddOpenApi();
 
-            builder.Services.AddDbContext<AppDbContext>(opt =>
-                 opt.UseInMemoryDatabase("TestDb"));
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ICurrentActor, CurrentActor>();
+            builder.Services.AddScoped<AuditAndSoftDeleteInterceptor>();
+
+            builder.Services.AddDbContext<AppDbContext>((sp, opt) =>
+            {
+                opt.UseInMemoryDatabase("TestDb");
+
+                // Add interceptors from DI
+                opt.AddInterceptors(sp.GetRequiredService<AuditAndSoftDeleteInterceptor>());
+            });
            
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
